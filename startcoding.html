@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Let's start coding</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#0f1724,#071234);color:#fff}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .panel{max-width:880px;width:100%;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:48px;border-radius:16px;text-align:center;box-shadow:0 12px 40px rgba(2,6,23,.6)}
+    h1{font-size:34px;margin:0 0 8px}
+    p{margin:0 0 20px;color:rgba(255,255,255,.85);font-size:18px}
+    .sub{color:rgba(255,255,255,.7);margin-bottom:18px}
+    .meta{color:rgba(255,255,255,.65);font-size:14px;margin-bottom:22px}
+    .btn{padding:12px 18px;border-radius:12px;border:0;font-weight:700;cursor:pointer}
+    .btn-close{background:#ef4444;color:#fff;margin-right:12px}
+    .btn-stay{background:#10b981;color:#063b2e}
+    .info{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;margin-top:18px;color:rgba(255,255,255,.85)}
+    @media (max-width:640px){h1{font-size:28px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>Let's start coding</h1>
+      <p class="sub">Attendance recorded. Close this page and pay attention now.</p>
+      <div id="details" class="meta"></div>
+      <div>
+        <button id="closeBtn" class="btn btn-close">Close this page</button>
+        <button id="stayBtn" class="btn btn-stay">I'll stay — show details</button>
+      </div>
+      <div id="info" class="info" style="display:none"></div>
+    </div>
+  </div>
+
+  <script>
+    function qs(k){ const params = new URLSearchParams(location.search); return params.get(k) || ''; }
+    const nm = decodeURIComponent(qs('name'));
+    const tm = decodeURIComponent(qs('time'));
+    const details = document.getElementById('details');
+    const info = document.getElementById('info');
+    details.textContent = nm ? `${nm} — ${tm}` : tm;
+    document.getElementById('closeBtn').addEventListener('click', ()=>{ window.close(); try{ window.open('','_self').close(); }catch(e){} });
+    document.getElementById('stayBtn').addEventListener('click', ()=>{ info.style.display = 'block'; info.innerHTML = `<strong>${nm}</strong><div style="margin-top:8px">${tm}</div><div style="margin-top:10px;color:rgba(255,255,255,.75)">Focus on the instructor now — no more tabs.</div>`; });
+  </script>
+</body>
+</html>

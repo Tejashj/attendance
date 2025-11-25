@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Attendance — Quick Check-in</title>
+  <style>
+    :root{--bg:#0f1724;--card:#ffffff;--muted:#64748b;--accent:#2563eb;--accent-2:#0369a1}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#f8fafc 0%, #eef2ff 100%);color:#0f1724;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .card{width:100%;max-width:980px;background:var(--card);border-radius:14px;padding:24px;box-shadow:0 10px 30px rgba(2,6,23,.08);display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+    h1{margin:0;font-size:20px;font-weight:700}
+    p.lead{margin:6px 0 16px;color:var(--muted)}
+    .left{display:flex;flex-direction:column;gap:12px}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,input[type=text]{padding:10px;border-radius:10px;border:1px solid #e6eef8;background:#fbfdff;min-width:220px}
+    button{border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 6px 18px rgba(37,99,235,.14)}
+    .btn-ghost{background:#f1f5f9;color:#0f1724;border:1px solid #e6eef8}
+    video{border-radius:10px;background:#000;width:100%;height:420px;object-fit:cover}
+    .right{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+    .meta{font-size:13px;color:var(--muted)}
+    .thumb{width:100%;height:220px;border-radius:10px;object-fit:cover;background:linear-gradient(180deg,#eef2ff,#fff)}
+    .notice{width:100%;padding:12px;border-radius:10px;background:#0ea5a4;color:#fff;font-weight:600;text-align:center}
+    .timestamp{font-weight:700;color:#0f1724}
+    .small{font-size:13px;color:var(--muted)}
+    footer{grid-column:1/-1;margin-top:8px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+    @media (max-width:900px){.card{grid-template-columns:1fr;max-width:720px}.right{align-items:stretch}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="left">
+      <div>
+        <h1>Quick Attendance</h1>
+        <p class="lead">Select your name, start the camera, then mark attendance. A timestamp will be recorded and shown instantly.</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <select id="profileSelect"><option value="">— pick a name —</option></select>
+        <input id="newName" placeholder="Type new name & Add" />
+        <button id="addBtn" class="btn-ghost">Add</button>
+      </div>
+      <div style="margin-top:8px">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="controls" style="margin-top:12px">
+          <button id="startCam" class="btn-primary">Start Camera</button>
+          <button id="stopCam" class="btn-ghost">Stop</button>
+          <button id="capture" class="btn-ghost">Mark Attendance</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Last Capture</div>
+            <div class="small" id="lastMeta">None yet</div>
+          </div>
+          <div style="text-align:right">
+            <div class="small">Status</div>
+            <div id="status" class="meta">Ready</div>
+          </div>
+        </div>
+        <img id="thumb" class="thumb" src="" alt="thumb" />
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <div class="meta">Recorded Timestamp</div>
+            <div id="timestamp" class="timestamp">—</div>
+          </div>
+          <div style="flex-basis:120px;display:flex;align-items:center;justify-content:center">
+            <div id="confirmation" class="notice" style="display:none">Saved</div>
+          </div>
+        </div>
+      </div>
+      <div style="width:100%;display:flex;gap:8px;justify-content:flex-end;align-items:center">
+        <div class="meta">Powered by Supabase</div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="meta">Make sure your camera is allowed in the browser.</div>
+      <div class="meta">If names are missing, add them above.</div>
+    </footer>
+  </div>
+
+  <script type="module">
+    const SUPABASE_URL = 'https://ezeisptmigyxxhhbluxv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6ZWlzcHRtaWd5eHhoaGJsdXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwODk1NjMsImV4cCI6MjA3OTY2NTU2M30.TVvYuXiSS9-0fr4yD1_Z_iEolauu0zfK_ZTdSusMLUg';
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
+    const startCam = document.getElementById('startCam');
+    const stopCam = document.getElementById('stopCam');
+    const captureBtn = document.getElementById('capture');
+    const profileSelect = document.getElementById('profileSelect');
+    const newName = document.getElementById('newName');
+    const addBtn = document.getElementById('addBtn');
+    const thumb = document.getElementById('thumb');
+    const status = document.getElementById('status');
+    const lastMeta = document.getElementById('lastMeta');
+    const timestampEl = document.getElementById('timestamp');
+    const confirmation = document.getElementById('confirmation');
+
+    let stream = null;
+
+    function setStatus(t){ status.textContent = t; }
+
+    startCam.addEventListener('click', async ()=>{
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream;
+        setStatus('Camera active');
+      }catch(e){
+        setStatus('Camera error');
+      }
+    });
+
+    stopCam.addEventListener('click', ()=>{
+      if(stream){
+        stream.getTracks().forEach(t=>t.stop());
+        video.srcObject = null;
+        stream = null;
+        setStatus('Camera stopped');
+      }
+    });
+
+    addBtn.addEventListener('click', async ()=>{
+      const name = (newName.value || '').trim();
+      if(!name){ setStatus('Type a name'); return; }
+      setStatus('Adding...');
+      const { data, error } = await supabase.from('profiles').insert({ name }).select('id').single();
+      if(error){ setStatus('Add failed'); return; }
+      await loadProfiles();
+      profileSelect.value = data.id;
+      newName.value = '';
+      setStatus('Added');
+    });
+
+    captureBtn.addEventListener('click', async ()=>{
+      const selected = profileSelect.value;
+      let profileId = selected || null;
+      const typedName = (newName.value || '').trim();
+      if(!profileId && !typedName){ setStatus('Select or add a name'); return; }
+      if(typedName){
+        const { data:existing } = await supabase.from('profiles').select('id').ilike('name', typedName).limit(1);
+        if(existing && existing.length) profileId = existing[0].id;
+        else{
+          const { data, error } = await supabase.from('profiles').insert({ name: typedName }).select('id').single();
+          if(error){ setStatus('Create failed'); return; }
+          profileId = data.id;
+          await loadProfiles();
+          profileSelect.value = profileId;
+        }
+      }
+      if(!stream){ setStatus('Start camera first'); return; }
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+      thumb.src = dataURL;
+      setStatus('Saving attendance...');
+      const { data: aData, error: aErr } = await supabase.from('attendance').insert({ profile_id: profileId }).select().single();
+      if(aErr){ setStatus('Save failed'); return; }
+      const ts = new Date(aData.timestamp).toLocaleString();
+      timestampEl.textContent = ts;
+      lastMeta.textContent = `${profileSelect.options[profileSelect.selectedIndex]?.text || typedName}`;
+      confirmation.style.display = 'block';
+      setStatus('Attendance recorded');
+      setTimeout(()=>{ window.location.href = `startcoding.html?name=${encodeURIComponent(profileSelect.options[profileSelect.selectedIndex]?.text || typedName)}&time=${encodeURIComponent(ts)}`; }, 1100);
+    });
+
+    async function loadProfiles(){
+      const { data, error } = await supabase.from('profiles').select('id,name').order('name');
+      if(error){ profileSelect.innerHTML = '<option value="">Error loading</option>'; return; }
+      profileSelect.innerHTML = '<option value="">— pick a name —</option>' + data.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    }
+
+    function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]||c)); }
+
+    loadProfiles().then(()=>setStatus('Ready'));
+  </script>
+</body>
+</html>
